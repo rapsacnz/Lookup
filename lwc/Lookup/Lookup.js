@@ -7,7 +7,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 const MINIMAL_SEARCH_TERM_LENGTH = 2; // Min number of chars required to search
 const SEARCH_DELAY = 300; // Wait 300 ms after user stops typing then, peform search
 
-export default class SimpleLookup extends LightningElement {
+export default class Lookup extends LightningElement {
   @api label;
   @api placeholder = '';
   @api errors = [];
