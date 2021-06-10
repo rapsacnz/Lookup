@@ -15,7 +15,7 @@ export default class Lookup extends LightningElement {
   @api customKey;
   @api sObjectName;
   @api sObjectIcon;
-
+  
   @track searchTerm = '';
   @track searchResults = [];
   @track hasFocus = false;
@@ -24,7 +24,17 @@ export default class Lookup extends LightningElement {
   cleanSearchTerm;
   blurTimeout;
   searchThrottlingTimeout;
-  curSelection = {}
+  selectedObject = {}
+
+  _value;
+  @api
+  set value(v) {
+    this._value = v;
+    this.getInitialValue();
+  }
+  get value() {
+    return this.selectedObject?.id 
+  }
 
   connectedCallback() {
 
@@ -36,20 +46,12 @@ export default class Lookup extends LightningElement {
       return;
     }
     this.rendered = true;
-    console.log('initial:' + JSON.stringify(this.curSelection));
+    console.log('initial:' + JSON.stringify(this._value));
     this.getInitialValue();
   }
 
   // EXPOSED FUNCTIONS
-  @api
-  set selection(initialSelection) {
 
-    this.curSelection = initialSelection;
-    this.getInitialValue();
-  }
-  get selection() {
-    return this.curSelection;
-  }
 
   @api
   setSearchResults(results) {
@@ -59,42 +61,26 @@ export default class Lookup extends LightningElement {
     this.searchResults = results.map((result) => {
       // Clone and complete search result if icon is missing
       if (typeof result.icon === 'undefined') {
-        const { id, sObjectType, title, subtitle } = result;
-        return {
-          id,
-          sObjectType,
-          icon: 'standard:default',
-          title,
-          subtitle
-        };
+        const { id, title, subtitle } = result;
+        return {id,title,subtitle};
       }
       return result;
     });
   }
 
-  @api
-  getSelection() {
-    return this.curSelection;
-  }
-
-  @api
-  getkey() {
-    return this.customKey;
-  }
 
   // INTERNAL FUNCTIONS
-
   getInitialValue() {
-    if (!this.curSelection || !this.curSelection.id) {
+    if (!this._value) {
       return;
     }
     var params = {
       type: this.sObjectName,
-      value: this.curSelection.id
+      value: this._value
     };
     getCurrentValue(params)
       .then((results) => {
-        this.curSelection = results;
+        this.selectedObject = results;
       })
       .catch((error) => {
         this.handleErrors(error);
@@ -165,7 +151,7 @@ export default class Lookup extends LightningElement {
       if (this.cleanSearchTerm.length >= MINIMAL_SEARCH_TERM_LENGTH) {
         // Display spinner until results are returned
         this.loading = true;
-        this.handleUserSearch(this.cleanSearchTerm, [this.curSelection]);
+        this.handleUserSearch(this.cleanSearchTerm, [this._value]);
 
       }
       this.searchThrottlingTimeout = null;
@@ -181,7 +167,7 @@ export default class Lookup extends LightningElement {
   }
 
   hasSelection() {
-    return (this.curSelection != null && this.curSelection != undefined);
+    return (this.selectedObject?.id != null && this.selectedObject?.id != undefined);
   }
 
   // EVENT HANDLING
@@ -202,7 +188,7 @@ export default class Lookup extends LightningElement {
     if (selectedItem.length === 0) {
       return;
     }
-    this.curSelection = selectedItem[0];
+    this.selectedObject = selectedItem[0];
 
     // Reset search
     this.searchTerm = '';
@@ -246,7 +232,7 @@ export default class Lookup extends LightningElement {
   }
 
   handleClearSelection() {
-    this.curSelection = null;
+    this.selectedObject = null;
     // Notify parent components that selection has changed
     this.dispatchEvent(new CustomEvent('selectionchange'));
   }
@@ -302,7 +288,7 @@ export default class Lookup extends LightningElement {
   }
 
   get getSelectIconName() {
-    //return this.hasSelection() ? this.curSelection.icon : 'standard:default';
+    //return this.hasSelection() ? this.selectedObject.icon : 'standard:default';
     return this.sObjectIcon ? this.sObjectIcon : 'standard:default';
   }
 
@@ -311,11 +297,11 @@ export default class Lookup extends LightningElement {
   }
 
   get getInputValue() {
-    return this.hasSelection() ? this.curSelection.title : this.searchTerm;
+    return this.hasSelection() ? this.selectedObject.title : this.searchTerm;
   }
 
   get getInputTitle() {
-    return this.hasSelection() ? this.curSelection.title : '';
+    return this.hasSelection() ? this.selectedObject.title : '';
   }
 
   get getListboxClass() {
